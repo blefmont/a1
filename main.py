@@ -1,7 +1,7 @@
 import sys, os, numpy
 
 try: # Pillow
-  from PIL import Image, ImageEnhance, ImageDraw
+  from PIL import Image, ImageDraw
 except:
   print 'Error: Pillow has not been installed.'
   sys.exit(0)
@@ -59,13 +59,14 @@ def buildImage():
   width  = src.size[0]
   height = src.size[1]
 
+  histList = [0]*256
+
   # Set up a new, blank image of the same size
 
   dst = Image.new( 'YCbCr', (width,height) )
   dstPixels = dst.load()
 
   # Build destination image from source image
-  y_list=[]
   for i in range(width):
     for j in range(height):
 
@@ -79,7 +80,7 @@ def buildImage():
       y = int(factor_y * y +(factor_x*50))
 
 
-
+      histList[y] += 1
       # write destination pixel (while flipping the image in the vertical direction)
 
       dstPixels[i,height-j-1] = (y,cb,cr)
@@ -92,27 +93,23 @@ def buildImage():
 
 ######################################################
 
-def img_histogram():
-    img = buildImage().convert('L')
-    width, height = img.size
-    pixels = img.load()
+def img_histogram(y, width, height):
+
     # cumulative histogram generator
     a = [0]*256
     for w in range(width):
-        for h in range(height):
-            p = pixels[w,h]
-            a[p] = a[p] + 1
-#    print a
+            a[y] += 1
 
+    print max(a)
     histogram = Image.new('RGB',(256,256),(255,255,255))
     draw = ImageDraw.Draw(histogram)
     for k in range(256):
-        a[k] = a[k]/10
-        start = (k,255)
-        end = (k,255-a[k])
+
+        start = (k,256)
+        end = (k,256-a[k])
         draw.line([start, end], (0,0,0))
     histogram.show()
-
+'''
     img = histeq(img,width,height).convert('L')
     width, height = img.size
     pixels = img.load()
@@ -144,6 +141,7 @@ def histeq(i,width, height):
     Image.fromarray(img2.reshape(width, height)).show()
     return Image.fromarray(img2.reshape(width, height))
 
+'''
 ######################################################
 
 # Set up the display and draw the current image
