@@ -1,3 +1,9 @@
+# Image manipulation
+#
+# You'll need Python 2.7 and must install these packages:
+#
+#   numpy, PyOpenGL, Pillow
+
 import sys, os, numpy
 
 try: # Pillow
@@ -20,9 +26,10 @@ except:
 
 windowWidth  = 600 # window dimensions
 windowHeight =  800
-Key_h = False # working with key pressing
-factor_x = 0 # factor by which luminance is scaled
-factor_y = 1 # for mouse only
+Key_h = False
+factor = 1 # factor by which luminance is scaled
+bright = 0 # about by which the brightness is changed
+
 
 
 # Image directory and pathe to image file
@@ -38,8 +45,8 @@ imgPath = os.path.join( imgDir, imgFilename )
 
 import Tkinter, tkFileDialog
 
-#root = Tkinter.Tk()
-#root.withdraw()
+root = Tkinter.Tk()
+root.withdraw()
 
 
 
@@ -50,10 +57,7 @@ def buildImage():
   # Read image and convert to YCbCr
 
   print imgPath
-
   src = Image.open( imgPath ).convert( 'YCbCr' )
-
-
   srcPixels = src.load()
 
   width  = src.size[0]
@@ -67,38 +71,28 @@ def buildImage():
   dstPixels = dst.load()
 
   # Build destination image from source image
+
   for i in range(width):
     for j in range(height):
 
       # read source pixel
-
+      
       y,cb,cr = srcPixels[i,j]
 
       # ---- MODIFY PIXEL ----
-
-
-      y = int(factor_y * y +(factor_x*50))
-      if y > 255:
-          y = 255
-          pass
-
-
+      
+      y = int(factor * y + bright) 
 
       # write destination pixel (while flipping the image in the vertical direction)
-
+      
       dstPixels[i,height-j-1] = (y,cb,cr)
-######################### histogram
-  for i in range(width):
-    for j in range(height):
-      y,cb,cr = dstPixels[i,j]
-      histList[y] +=1
-#########################
 
   # Done
 
 
 
-
+#########################
+# TODO: hist,
 
   dstPixels = dst.load()
 
@@ -107,9 +101,6 @@ def buildImage():
 
 ######################################################
 
-
-
-######################################################
 
 # Set up the display and draw the current image
 
@@ -143,7 +134,7 @@ def display():
   glutSwapBuffers()
 
 
-
+  
 # Handle keyboard input
 
 def keyboard( key, x, y ):
@@ -162,10 +153,7 @@ def keyboard( key, x, y ):
       saveImage( outputPath )
 
   elif key == 'h':
-     img_histogram()
      Key_h = True
-
-
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.
 
@@ -189,7 +177,7 @@ def saveImage( path ):
 
   buildImage().save( path )
 
-
+  
 
 # Handle window reshape
 
@@ -209,23 +197,24 @@ def reshape( newWidth, newHeight ):
 button = None
 initX = 0
 initY = 0
-initFactor_x = 0
-initFactor_y = 0
+initFactor = 0
+initBright = 0
+
 
 
 # Handle mouse click/unclick
 
 def mouse( btn, state, x, y ):
 
-  global button, initX, initY, initFactor_x, initFactor_y
+  global button, initX, initY, initFactor, initBright
 
   if state == GLUT_DOWN:
 
     button = btn
     initX = x
     initY = y
-    initFactor_x = factor_x
-    initFactor_y = factor_y
+    initFactor = factor
+    initBright = bright
 
   elif state == GLUT_UP:
 
@@ -240,20 +229,18 @@ def motion( x, y ):
   diffX = x - initX
   diffY = y - initY
 
-  global factor_x, factor_y
+  global factor, bright
 
-  factor_x = initFactor_x + diffX / float(windowWidth)
-  factor_y = initFactor_y + diffY / float(windowHeight)
+  factor = initFactor + diffX / float(windowWidth)
+  bright = initBright + diffY / float(windowHeight) * 225
 
-  if factor_x < 0:
-    factor_x = 0
-  #if factor_y < 0:
-    #factor_y = 0
+  if factor < 0:
+    factor = 0
 
   glutPostRedisplay()
+  
 
-################################## no need to change ##################################
-
+    
 # Run OpenGL
 
 glutInit()
