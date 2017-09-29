@@ -80,7 +80,6 @@ def buildImage():
       y = int(factor_y * y +(factor_x*50))
 
 
-      histList[y] += 1
       # write destination pixel (while flipping the image in the vertical direction)
 
       dstPixels[i,height-j-1] = (y,cb,cr)
