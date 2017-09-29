@@ -1,7 +1,7 @@
 import sys, os, numpy
 
 try: # Pillow
-  from PIL import Image, ImageDraw
+  from PIL import Image
 except:
   print 'Error: Pillow has not been installed.'
   sys.exit(0)
@@ -20,7 +20,7 @@ except:
 
 windowWidth  = 600 # window dimensions
 windowHeight =  800
-Key_h = False
+Key_h = False # working with key pressing
 factor_x = 0 # factor by which luminance is scaled
 factor_y = 1 # for mouse only
 
@@ -78,19 +78,27 @@ def buildImage():
 
 
       y = int(factor_y * y +(factor_x*50))
+      if y > 255:
+          y = 255
+          pass
 
 
-      histList[y] += 1
+
       # write destination pixel (while flipping the image in the vertical direction)
 
       dstPixels[i,height-j-1] = (y,cb,cr)
+######################### histogram
+  for i in range(width):
+    for j in range(height):
+      y,cb,cr = dstPixels[i,j]
+      histList[y] +=1
+#########################
 
   # Done
 
 
 
-#########################
-# TODO: hist,
+
 
   dstPixels = dst.load()
 
@@ -99,22 +107,7 @@ def buildImage():
 
 ######################################################
 
-def img_histogram():
 
-    # cumulative histogram generator
-    a = [0]*256
-    for w in range(width):
-            a[y] += 1
-
-    print max(a)
-    histogram = Image.new('RGB',(256,256),(255,255,255))
-    draw = ImageDraw.Draw(histogram)
-    for k in range(256):
-
-        start = (k,256)
-        end = (k,256-a[k])
-        draw.line([start, end], (0,0,0))
-    histogram.show()
 
 ######################################################
 
@@ -254,8 +247,8 @@ def motion( x, y ):
 
   if factor_x < 0:
     factor_x = 0
-  if factor_y < 0:
-    factor_y = 0
+  #if factor_y < 0:
+    #factor_y = 0
 
   glutPostRedisplay()
 
