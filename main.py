@@ -86,6 +86,12 @@ def buildImage():
       dstPixels[i,height-j-1] = (y,cb,cr)
 
   # Done
+
+
+
+#########################
+# TODO: hist,
+
   dstPixels = dst.load()
 
 
@@ -93,7 +99,7 @@ def buildImage():
 
 ######################################################
 
-def img_histogram(y, width, height):
+def img_histogram():
 
     # cumulative histogram generator
     a = [0]*256
@@ -109,39 +115,7 @@ def img_histogram(y, width, height):
         end = (k,256-a[k])
         draw.line([start, end], (0,0,0))
     histogram.show()
-'''
-    img = histeq(img,width,height).convert('L')
-    width, height = img.size
-    pixels = img.load()
-    # cumulative histogram generator
-    a = [0]*256
-    for w in range(width):
-        for h in range(height):
-            p = pixels[w,h]
-            a[p] = a[p] + 1
-#    print a
-    histogram = Image.new('RGB',(256,256),(255,255,255))
-    draw = ImageDraw.Draw(histogram)
-    for k in range(256):
-        a[k] = a[k]*200/max(a)
-        start = (k,255)
-        end = (k,255-a[k])
-        draw.line([start, end], (0,0,0))
-    histogram.show()
 
-def histeq(i,width, height):
-    img = numpy.array(i)
-    imghist,bins = numpy.histogram(img.flatten(),256)
-    cumulative_distribution = imghist.cumsum()
-    # print
-    cumulative_distribution = 256*cumulative_distribution/cumulative_distribution[-1]
-
-    img2 = numpy.interp(img.flatten(),bins[:-1],cumulative_distribution)
-
-    Image.fromarray(img2.reshape(width, height)).show()
-    return Image.fromarray(img2.reshape(width, height))
-
-'''
 ######################################################
 
 # Set up the display and draw the current image
