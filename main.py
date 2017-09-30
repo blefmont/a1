@@ -45,8 +45,8 @@ imgPath = os.path.join( imgDir, imgFilename )
 
 import Tkinter, tkFileDialog
 
-root = Tkinter.Tk()
-root.withdraw()
+#root = Tkinter.Tk()
+#root.withdraw()
 
 
 
@@ -63,8 +63,6 @@ def buildImage():
   width  = src.size[0]
   height = src.size[1]
 
-  histList = [0]*256
-
   # Set up a new, blank image of the same size
 
   dst = Image.new( 'YCbCr', (width,height) )
@@ -76,31 +74,52 @@ def buildImage():
     for j in range(height):
 
       # read source pixel
-      
+
       y,cb,cr = srcPixels[i,j]
 
       # ---- MODIFY PIXEL ----
-      
-      y = int(factor * y + bright) 
+
+      y = int(factor * y + bright) if int(factor * y + bright)<=255 else 255
 
       # write destination pixel (while flipping the image in the vertical direction)
-      
+
       dstPixels[i,height-j-1] = (y,cb,cr)
 
   # Done
+   ######################### histogram List generator
+
+  histList = histogram_List_generator(dstPixels, width, height)
+
+  if Key_h:
+      # TODO: cannot catch key action
+      histList = histogram_List_generator(dstPixels, width, height)
+      print histList
+      256/sum(histList)* -1
+      for i in range(width):
+          for j in range(height):
+
+              y,cb,cr = dstPixels[i,j]
+              y = round(((256/(480.0*480.0)) * sum(histList[:y]))-1) # using the function from the note
+              dstPixels[i,j] = (y,cb,cr)
+
+      print histogram_List_generator(dstPixels, width, height)
 
 
-
-#########################
-# TODO: hist,
-
-  dstPixels = dst.load()
-
+  #########################
 
   return dst.convert( 'RGB' )
 
-######################################################
+################## HELPING FUNCTIONS #################
+def histogram_List_generator(pixel, width, height):
+    histList = [0]*256
+    for i in range(width):
+        for j in range(height):
+          y,cb,cr = pixel[i,j]
+          histList[y] +=1  ## generate the histogram list
+    return histList
 
+
+######################################################
 
 # Set up the display and draw the current image
 
@@ -134,7 +153,7 @@ def display():
   glutSwapBuffers()
 
 
-  
+
 # Handle keyboard input
 
 def keyboard( key, x, y ):
@@ -177,7 +196,7 @@ def saveImage( path ):
 
   buildImage().save( path )
 
-  
+
 
 # Handle window reshape
 
@@ -238,9 +257,9 @@ def motion( x, y ):
     factor = 0
 
   glutPostRedisplay()
-  
 
-    
+
+
 # Run OpenGL
 
 glutInit()
