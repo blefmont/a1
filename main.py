@@ -48,7 +48,9 @@ import Tkinter, tkFileDialog
 root = Tkinter.Tk()
 root.withdraw()
 
-
+# Catch 'f' being pressed for filter application
+def loadFilter():
+  print "Pressed f"
 
 # Read and modify an image.
 
@@ -56,7 +58,6 @@ def buildImage():
   global Key_h
   # Read image and convert to YCbCr
 
-  print imgPath
   src = Image.open( imgPath ).convert( 'YCbCr' )
   srcPixels = src.load()
 
@@ -154,6 +155,10 @@ def keyboard( key, x, y ):
 
   elif key == 'h':
      Key_h = True
+
+  elif key == 'f':
+    loadFilter()
+    
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.
 
