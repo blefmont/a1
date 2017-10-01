@@ -27,6 +27,7 @@ except:
 windowWidth  = 600 # window dimensions
 windowHeight =  800
 Key_h = False
+Key_a = False
 factor = 1 # factor by which luminance is scaled
 bright = 0 # about by which the brightness is changed
 
@@ -53,7 +54,7 @@ import Tkinter, tkFileDialog
 # Read and modify an image.
 
 def buildImage():
-  global Key_h
+  global Key_h, Key_a
   # Read image and convert to YCbCr
 
   print imgPath
@@ -62,6 +63,18 @@ def buildImage():
 
   width  = src.size[0]
   height = src.size[1]
+
+
+
+
+  xdim = 3
+  ydim = 1
+  #EF = [[0.0625,0.125,0.0625],[0.125,0.25,0.125],[0.0625,0.125,0.0625]]
+  #EF = [[0.3333333,0.3333333,0.3333333]]
+  EF = [[0,0,1]]
+  #EF = [[1,1,1],[1,-8,1],[1,1,1]]
+
+
 
   # Set up a new, blank image of the same size
 
@@ -103,11 +116,33 @@ def buildImage():
               dstPixels[i,j] = (y,cb,cr)
 
       print histogram_List_generator(dstPixels, width, height)
+   ######################### filter applying
+
+
+  fimg = Image.new( 'YCbCr', (width,height) )
+  fPixels = fimg.load()
+  for i in range(width):
+    for j in range(height):
+
+        tmp = 0
+        for a in range(ydim):
+            for b in range(xdim):
+          #print len
+                if i-b < 0 or j-a < 0:
+                    Y = 0
+                else:
+                    Y,CB,CR = dstPixels[i-b,j-a]
+                tmp += EF[a][b] * Y
+          #print tmp == Y
+        y = int(tmp)
+        fPixels[i,j] = (y,CB,CR)
+
+
 
 
   #########################
 
-  return dst.convert( 'RGB' )
+  return fimg.convert( 'RGB' )
 
 ################## HELPING FUNCTIONS #################
 def histogram_List_generator(pixel, width, height):
@@ -173,6 +208,9 @@ def keyboard( key, x, y ):
 
   elif key == 'h':
      Key_h = True
+
+  elif key == 'a':
+     Key_a = True
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.
 
