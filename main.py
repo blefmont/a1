@@ -41,6 +41,15 @@ imgFilename = 'mandrill.png'
 imgPath = os.path.join( imgDir, imgFilename )
 
 
+xdim = 10
+ydim = 1
+#filterData = [[0.0625,0.125,0.0625],[0.125,0.25,0.125],[0.0625,0.125,0.0625]]
+#filterData = [[0.3333333,0.3333333,0.3333333]]
+#filterData = [[-0.5,2,-0.5]]
+filterData = [[1,0,0,0,0,0,0,0,0,0]]
+#filterData = [[1,1,1],[1,-7,1],[1,1,1]]
+
+
 
 # File dialog
 
@@ -67,12 +76,6 @@ def buildImage():
 
 
 
-  xdim = 3
-  ydim = 1
-  #EF = [[0.0625,0.125,0.0625],[0.125,0.25,0.125],[0.0625,0.125,0.0625]]
-  #EF = [[0.3333333,0.3333333,0.3333333]]
-  EF = [[0,0,1]]
-  #EF = [[1,1,1],[1,-8,1],[1,1,1]]
 
 
 
@@ -104,55 +107,69 @@ def buildImage():
   histList = histogram_List_generator(dstPixels, width, height)
 
   if Key_h:
-      # TODO: cannot catch key action
-      histList = histogram_List_generator(dstPixels, width, height)
+      histList, count = histogram_List_generator(dstPixels, width, height)
       print histList
-      256/sum(histList)* -1
       for i in range(width):
           for j in range(height):
 
               y,cb,cr = dstPixels[i,j]
-              y = round(((256/(480.0*480.0)) * sum(histList[:y]))-1) # using the function from the note
+              y = round(((count/(480.0*480.0)) * sum(histList[:y]))-1) # using the function from the note
               dstPixels[i,j] = (y,cb,cr)
-
-      print histogram_List_generator(dstPixels, width, height)
+      histList, count = histogram_List_generator(dstPixels, width, height)
+      print histList
+      #Key_h = False
    ######################### filter applying
 
+  if Key_a:
 
-  fimg = Image.new( 'YCbCr', (width,height) )
-  fPixels = fimg.load()
-  for i in range(width):
-    for j in range(height):
+      fimg = Image.new( 'YCbCr', (width,height) ) # new img
+      fPixels = fimg.load()
+      for i in range(width):
+          for j in range(height):
 
-        tmp = 0
-        for a in range(ydim):
-            for b in range(xdim):
-          #print len
-                if i-b < 0 or j-a < 0:
-                    Y = 0
-                else:
-                    Y,CB,CR = dstPixels[i-b,j-a]
-                tmp += EF[a][b] * Y
-          #print tmp == Y
-        y = int(tmp)
-        fPixels[i,j] = (y,CB,CR)
+              fPixels[i,j] = convolution(dstPixels, i, j, width, height)
 
-
+      dst = fimg
+      #Key_a = False
 
 
   #########################
 
-  return fimg.convert( 'RGB' )
+  return dst.convert( 'RGB' )
 
 ################## HELPING FUNCTIONS #################
 def histogram_List_generator(pixel, width, height):
     histList = [0]*256
+    count = 0
     for i in range(width):
         for j in range(height):
           y,cb,cr = pixel[i,j]
           histList[y] +=1  ## generate the histogram list
-    return histList
+    for i in range(len(histList)):
+        if histList[i] != 0:
+            count +=1
+    return histList, count
 
+def filter(File):
+    global xdim, ydim, filterData
+    ##use global varible to save xdim, ydim, filterData
+
+def convolution(Pixels, x, y, width, height):
+    global xdim, ydim, filterData
+
+
+    tmpy, tmpcb, tmpcr = 0,0,0
+    Y,CB,CR = Pixels[x,y]
+    for a in range(ydim):
+        for b in range(xdim):
+            if x-(len(filterData[0])/2)+b < 0 or y-(len(filterData)/2)+a < 0 or x-(len(filterData[0])/2)+b > width-1 or y-(len(filterData)/2)+a > height-1:
+                Y=0
+            else:
+                Y,CB,CR = Pixels[x-(len(filterData[0])/2)+b,y-(len(filterData)/2)+a]
+            tmpy += filterData[a][b] * Y
+            tmpcb += filterData[a][b] * CB
+            tmpcr += filterData[a][b] * CR
+    return int(round(tmpy)), int(round(tmpcb)), int(round(tmpcr)) # return (Y,Cb,Cr)
 
 ######################################################
 
@@ -192,6 +209,7 @@ def display():
 # Handle keyboard input
 
 def keyboard( key, x, y ):
+  global Key_h, Key_a
 
   if key == '\033': # ESC = exit
     sys.exit(0)
