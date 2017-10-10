@@ -151,10 +151,6 @@ def histogram_List_generator(pixel, width, height):
             count +=1
     return histList, count
 
-def filter(File):
-    global xdim, ydim, filterData
-    ##use global varible to save xdim, ydim, filterData
-
 
 def convolution(Pixels, x, y, width, height):
     global xdim, ydim, filterData
@@ -356,25 +352,28 @@ def motion( x, y ):
     bright = initBright + diffY / float(windowHeight) * 225
     wasRC = False
   elif button == 2:
+    x + (windowWidth - width)/2
+    y - (windowHeight - height)/2
     if wasRC:
-      mdiffX = lastX - x
-      mdiffY = lastY - y
+      mdiffX = x - lastX
+      mdiffY = y - lastY
       distance = math.sqrt((x-lastX)**2 + (y-lastY)**2)
       prevCircleX = lastX
       prevCircleY = lastY
       print "last pos", lastX, lastY
-      print "Distance between RC", distance
-      for i in range (int(distance)):
-        filterCircle(int(round(prevCircleX + (mdiffX*(i+1))/distance)), int(round(prevCircleY + (mdiffY*(i+1))/distance)))
-        prevCircleX = prevCircleX + ((mdiffX*(i+1))/distance)
-        prevCircleY = prevCircleY + ((mdiffY*(i+1))/distance)
-
-       # filterCircle(int(round(lastX + ((x-lastX) * i)/distance)), int(round(initY + ((y-lastY) * i)/distance)))        
+      print "Distance between RC", distance, " diff", mdiffX, "mdiffY", mdiffY
       
+      for i in range (int(distance)):
+
+        
+        filterCircle(int(round(prevCircleX + (mdiffX)/distance)), int(round(prevCircleY + mdiffY/distance)))
+        prevCircleX = prevCircleX + ((mdiffX)/distance)
+        prevCircleY = prevCircleY + ((mdiffY)/distance)
+
     else:
       filterCircle(x,y)
     wasRC = True
-  ##  print toFilter
+    
   else:
     wasRC = False
   if factor < 0:
