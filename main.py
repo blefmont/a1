@@ -4,7 +4,7 @@
 #
 #   numpy, PyOpenGL, Pillow
 
-import sys, os, numpy
+import sys, os, numpy, math
 
 try: # Pillow
   from PIL import Image
@@ -31,7 +31,15 @@ Key_a = False
 factor = 1 # factor by which luminance is scaled
 bright = 0 # about by which the brightness is changed
 
+xdim = 1
+ydim = 1
+filterData = [[1]]
 
+radius = 2
+toFilter = set()
+wasRC = False
+lastX = 0
+lastY = 0
 
 # Image directory and pathe to image file
 
@@ -41,29 +49,21 @@ imgFilename = 'mandrill.png'
 imgPath = os.path.join( imgDir, imgFilename )
 
 
-xdim = 10
-ydim = 1
-#filterData = [[0.0625,0.125,0.0625],[0.125,0.25,0.125],[0.0625,0.125,0.0625]]
-#filterData = [[0.3333333,0.3333333,0.3333333]]
-#filterData = [[-0.5,2,-0.5]]
-filterData = [[1,0,0,0,0,0,0,0,0,0]]
-#filterData = [[1,1,1],[1,-7,1],[1,1,1]]
-
-
 
 # File dialog
 
 import Tkinter, tkFileDialog
 
-#root = Tkinter.Tk()
-#root.withdraw()
+root = Tkinter.Tk()
+
+root.withdraw()
 
 
 
 # Read and modify an image.
 
 def buildImage():
-  global Key_h, Key_a
+  global Key_h, Key_a, toFilter
   # Read image and convert to YCbCr
 
   print imgPath
@@ -72,11 +72,6 @@ def buildImage():
 
   width  = src.size[0]
   height = src.size[1]
-
-
-
-
-
 
 
   # Set up a new, blank image of the same size
@@ -96,16 +91,22 @@ def buildImage():
       # ---- MODIFY PIXEL ----
 
       y = int(factor * y + bright) if int(factor * y + bright)<=255 else 255
+      
 
       # write destination pixel (while flipping the image in the vertical direction)
 
       dstPixels[i,height-j-1] = (y,cb,cr)
+
+      if (i,j) in toFilter:
+        dstPixels[i, height-j-1] = convolution(dstPixels, i, j, width, height)
+        toFilter.remove((i,j))
 
   # Done
    ######################### histogram List generator
 
   histList = histogram_List_generator(dstPixels, width, height)
 
+  
   if Key_h:
       histList, count = histogram_List_generator(dstPixels, width, height)
       print histList
@@ -154,6 +155,7 @@ def filter(File):
     global xdim, ydim, filterData
     ##use global varible to save xdim, ydim, filterData
 
+
 def convolution(Pixels, x, y, width, height):
     global xdim, ydim, filterData
 
@@ -171,6 +173,41 @@ def convolution(Pixels, x, y, width, height):
             tmpcr += filterData[a][b] * CR
     return int(round(tmpy)), int(round(tmpcb)), int(round(tmpcr)) # return (Y,Cb,Cr)
 
+
+def loadFilter():
+    global xdim, ydim, filterData
+   
+    path = tkFileDialog.askopenfilename( initialdir = 'filters' )
+    if path:
+       
+        filterFile = open(path)
+        xydim = filterFile.readline().strip().split()
+        scaleFactor = filterFile.readline().strip()
+       
+        data = filterFile.readlines()
+        for i in range(len(data)):
+          data[i] = data[i].strip()
+          data[i] = data[i].split()
+          for j in range(len(data[i])):
+             data[i][j] = float(data[i][j])
+             data[i][j] = data[i][j]*float(scaleFactor)
+
+        
+        xdim = int(xydim[0])
+        ydim = int(xydim[1])
+        filterData = data
+
+def filterCircle(centerX, centerY):
+    global toFilter
+
+    print ("filterCircle:", centerX, centerY)
+    for i in range(-radius, radius + 1):
+        for j in range (-radius, radius + 1):
+            distance = math.sqrt((centerX - (centerX + i))**2 + (centerY - (centerY + j))**2)
+            if distance <= radius:
+                toFilter.add(((centerX + i) , (centerY + j)))
+   # print toFilter
+  
 ######################################################
 
 # Set up the display and draw the current image
@@ -209,7 +246,7 @@ def display():
 # Handle keyboard input
 
 def keyboard( key, x, y ):
-  global Key_h, Key_a
+  global Key_h, Key_a, radius
 
   if key == '\033': # ESC = exit
     sys.exit(0)
@@ -229,6 +266,12 @@ def keyboard( key, x, y ):
 
   elif key == 'a':
      Key_a = True
+  elif key == 'f':     
+     loadFilter()
+  elif key == "-" or key == "_":
+    radius -= 1
+  elif key == "+" or key == "=":
+    radius += 1
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.
 
@@ -303,17 +346,42 @@ def motion( x, y ):
 
   diffX = x - initX
   diffY = y - initY
+  
 
-  global factor, bright
+  global factor, bright, button, wasRC, lastX, lastY
+  print "pos", x,y
+  print "button", button
+  if button == 0:
+    factor = initFactor + diffX / float(windowWidth)
+    bright = initBright + diffY / float(windowHeight) * 225
+    wasRC = False
+  elif button == 2:
+    if wasRC:
+      mdiffX = lastX - x
+      mdiffY = lastY - y
+      distance = math.sqrt((x-lastX)**2 + (y-lastY)**2)
+      prevCircleX = lastX
+      prevCircleY = lastY
+      print "last pos", lastX, lastY
+      print "Distance between RC", distance
+      for i in range (int(distance)):
+        filterCircle(int(round(prevCircleX + (mdiffX*(i+1))/distance)), int(round(prevCircleY + (mdiffY*(i+1))/distance)))
+        prevCircleX = prevCircleX + ((mdiffX*(i+1))/distance)
+        prevCircleY = prevCircleY + ((mdiffY*(i+1))/distance)
 
-  factor = initFactor + diffX / float(windowWidth)
-  bright = initBright + diffY / float(windowHeight) * 225
-
+       # filterCircle(int(round(lastX + ((x-lastX) * i)/distance)), int(round(initY + ((y-lastY) * i)/distance)))        
+      
+    else:
+      filterCircle(x,y)
+    wasRC = True
+  ##  print toFilter
+  else:
+    wasRC = False
   if factor < 0:
     factor = 0
-
+  lastX = x
+  lastY = y
   glutPostRedisplay()
-
 
 
 # Run OpenGL
@@ -332,3 +400,5 @@ glutMouseFunc( mouse )
 glutMotionFunc( motion )
 
 glutMainLoop()
+
+
